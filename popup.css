@@ -140,6 +140,7 @@ main {
 .row .rname { font-size: 10px; color: var(--accent); margin-top: 2px; word-break: break-all; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#episodeChips { user-select: none; }
 .chip {
   border: 1px solid var(--border);
   background: var(--chip-bg);

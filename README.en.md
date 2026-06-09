@@ -51,7 +51,7 @@ For very large result sets, up to 5000 entries are loaded; narrow them with the 
 
 1. Open any of the pages above and click the extension icon — the popup loads that page's resources automatically
 2. **Fansub**: chips toggle which groups are shown; **Select all / Clear** is in the top-right
-3. **Episode**: click an episode to check/uncheck all its versions; a half-filled chip means partially selected.
+3. **Episode**: click an episode to check/uncheck all its versions, or **press and drag across chips to range-select multiple episodes**; a half-filled chip means partially selected.
    **When a search spans multiple seasons, chips show `S01E09 / S04E09` so seasons no longer collide**
 4. **Resource list**: each resource is one checkable row; keyword filtering (e.g. `Baha`, `简体`, `1080`) distinguishes source/quality
 5. Pick a **copy format** (a live example is shown below the selector), then click **Copy selected magnets** at the bottom — magnets are sorted by episode and joined by newlines into the clipboard

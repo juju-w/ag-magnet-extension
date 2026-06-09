@@ -89,6 +89,7 @@ async function init() {
   el.selectAll.addEventListener('click', () => setAllVisible(true));
   el.clearAll.addEventListener('click', () => setAllVisible(false));
   el.copyBtn.addEventListener('click', copySelected);
+  document.addEventListener('mouseup', dragEnd);
 }
 
 function currentTab() {
@@ -305,6 +306,33 @@ function recompute() {
     for (const s in votes) {
       offMap[s] = +Object.entries(votes[s]).sort((a, b) => b[1] - a[1])[0][0];
     }
+    // Many long series number episodes continuously across seasons
+    // (S1: 1-24, S2: 25-48, ...). If some seasons have a known offset but
+    // others don't, extrapolate linearly. This is safe: toRelative() only
+    // subtracts from numbers ABOVE the offset, so genuinely-relative items
+    // (small numbers) are never affected.
+    const known = Object.keys(offMap).map(Number).sort((a, b) => a - b);
+    if (known.length) {
+      let slope, intercept;
+      if (known.length >= 2) {
+        const xs = known, ys = known.map((s) => offMap[s]);
+        const n = xs.length;
+        const sx = xs.reduce((a, b) => a + b, 0);
+        const sy = ys.reduce((a, b) => a + b, 0);
+        const sxy = xs.reduce((a, x, i) => a + x * ys[i], 0);
+        const sxx = xs.reduce((a, x) => a + x * x, 0);
+        const denom = n * sxx - sx * sx;
+        slope = denom ? (n * sxy - sx * sy) / denom : 0;
+        intercept = (sy - slope * sx) / n;
+      } else {
+        const s0 = known[0], off0 = offMap[s0];
+        slope = s0 > 1 && off0 > 0 ? off0 / (s0 - 1) : 0;
+        intercept = off0 - slope * s0;
+      }
+      for (const s of distinct) {
+        if (!(s in offMap)) offMap[s] = Math.max(0, Math.round(intercept + slope * s));
+      }
+    }
   }
 
   for (const it of items) {
@@ -455,19 +483,46 @@ function renderEpisodes() {
     chip.className = 'chip';
     chip.dataset.ep = ep;
     chip.textContent = ep;
-    chip.addEventListener('click', () => toggleEpisode(ep));
+    // Click toggles one episode; press-and-drag across chips selects a range.
+    chip.addEventListener('mousedown', (e) => { e.preventDefault(); dragStart(ep); });
+    chip.addEventListener('mouseenter', (e) => {
+      if (!drag.active) return;
+      if (e.buttons & 1) dragOver(ep); // primary button still held
+      else dragEnd();                  // released outside the popup
+    });
     el.episodeChips.appendChild(chip);
   });
   refreshEpisodeChips();
 }
 
-function toggleEpisode(ep) {
-  const rows = currentVisibleItems().filter((it) => it.epLabel === ep);
-  const allOn = rows.length && rows.every((it) => it.checked);
-  rows.forEach((it) => (it.checked = !allOn));
-  renderList();
+// --- episode drag-select ---
+const drag = { active: false, value: false, seen: new Set() };
+
+function epRows(ep) {
+  return currentVisibleItems().filter((it) => it.epLabel === ep);
+}
+
+function dragStart(ep) {
+  const rows = epRows(ep);
+  const allOn = rows.length > 0 && rows.every((it) => it.checked);
+  drag.active = true;
+  drag.value = !allOn; // start on a fully-selected chip => drag deselects
+  drag.seen = new Set();
+  dragOver(ep);
+}
+
+function dragOver(ep) {
+  if (drag.seen.has(ep)) return;
+  drag.seen.add(ep);
+  epRows(ep).forEach((it) => (it.checked = drag.value));
   refreshEpisodeChips();
   updateFooter();
+}
+
+function dragEnd() {
+  if (!drag.active) return;
+  drag.active = false;
+  renderList(); // sync the resource-list checkboxes once at the end
 }
 
 function refreshEpisodeChips() {
