@@ -14,6 +14,8 @@
   <img alt="manifest" src="https://img.shields.io/badge/Chrome-MV3-ff6699.svg" />
 </p>
 
+<p align="center"><b>简体中文</b> · <a href="README.en.md">English</a></p>
+
 ## ✨ 特性
 
 - **按字幕组 / 集数批量勾选**，一键复制全部磁力链接，告别逐条点开
