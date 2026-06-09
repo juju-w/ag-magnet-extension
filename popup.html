@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <div class="title" id="animeTitle">Anime Garden 磁力批量复制</div>
+    <div class="sub" id="statusLine">读取中…</div>
+  </header>
+
+  <main id="main" hidden>
+    <section class="block">
+      <div class="block-label-row">
+        <span class="block-label">字幕组 / 翻译组</span>
+        <span class="mini-actions">
+          <button class="link-btn" id="fansubAll">全选</button>
+          <button class="link-btn" id="fansubNone">取消</button>
+        </span>
+      </div>
+      <div class="chips" id="fansubChips"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-label">集数 <span class="hint">（点击勾选/取消该集所有版本）</span></div>
+      <div class="chips" id="episodeChips"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-label">NAS 命名 <span class="hint">（用于「磁力+重命名」与「名称」导出）</span></div>
+      <input type="text" id="showName" class="nas-input" placeholder="番剧名（自动识别，可改）" />
+      <div class="nas-row">
+        <label class="num" title="年份，提升极影视/TMDB 匹配准确率">年<input type="number" id="year" placeholder="—" min="1900" max="2099" /></label>
+        <label class="num">季<input type="number" id="season" value="1" min="0" /></label>
+        <label class="num" title="长篇番绝对集号偏移：相对集 = 集号 − 偏移（自动识别，可改）">偏移<input type="number" id="offset" value="0" min="0" /></label>
+      </div>
+      <select id="copyFormat" class="nas-select">
+        <option value="magnet">复制格式：纯磁力链</option>
+        <option value="magnet-dn">复制格式：磁力 + 重命名 dn（剧名 - SxxEyy）</option>
+        <option value="path">复制格式：极影视目录路径（剧名 (年)/Season xx/…）</option>
+        <option value="path-magnet">复制格式：路径 ⇥ 磁力（两列，给整理脚本）</option>
+      </select>
+      <div class="fmt-hint" id="fmtHint"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-label-row">
+        <span class="block-label">资源列表</span>
+        <input type="search" id="keyword" placeholder="关键词过滤，如 Baha / 简体 / 1080" />
+      </div>
+      <div class="list" id="list"></div>
+    </section>
+  </main>
+
+  <div class="empty" id="empty" hidden></div>
+
+  <footer id="footer" hidden>
+    <div class="footer-actions">
+      <button class="ghost" id="selectAll">全选</button>
+      <button class="ghost" id="clearAll">清空</button>
+    </div>
+    <button class="primary" id="copyBtn" disabled>复制选中磁力 (0)</button>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

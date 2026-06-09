@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff7aa2"/>
+      <stop offset="1" stop-color="#ff3d80"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="29" fill="url(#bg)"/>
+  <!-- 马蹄磁体 -->
+  <path d="M 37 102 L 37 51 A 27 27 0 0 1 91 51 L 91 102"
+        fill="none" stroke="#ffffff" stroke-width="21" stroke-linecap="round"/>
+  <!-- 磁极 -->
+  <line x1="37" y1="83" x2="37" y2="101" stroke="#2de1c2" stroke-width="21" stroke-linecap="round"/>
+  <line x1="91" y1="83" x2="91" y2="101" stroke="#2de1c2" stroke-width="21" stroke-linecap="round"/>
+</svg>
