@@ -71,51 +71,23 @@ main {
 }
 #keyword:focus { border-color: var(--accent); }
 
-.nas-input {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 5px 8px;
-  font-size: 12px;
-  outline: none;
-  margin-bottom: 6px;
-}
-.nas-input:focus { border-color: var(--accent); }
-.nas-row { display: flex; gap: 8px; margin-bottom: 6px; }
-.nas-row .num {
-  flex: 1;
+.num {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12px;
+  gap: 4px;
+  font-size: 11px;
   color: var(--muted);
   white-space: nowrap;
 }
-.nas-row .num input {
-  flex: 1;
-  min-width: 0;
-  width: 100%;
+.num input {
+  width: 48px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 5px 6px;
+  padding: 3px 6px;
   font-size: 12px;
   outline: none;
 }
-.nas-row .num input:focus { border-color: var(--accent); }
-.fmt-hint {
-  margin-top: 6px;
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1.5;
-  word-break: break-all;
-}
-.fmt-hint .eg {
-  display: block;
-  margin-top: 2px;
-  color: var(--accent);
-  font-family: ui-monospace, Menlo, Consolas, monospace;
-  font-size: 10px;
-}
+.num input:focus { border-color: var(--accent); }
 .mini-actions { display: flex; gap: 4px; }
 .link-btn {
   border: none;
@@ -126,18 +98,6 @@ main {
   cursor: pointer;
 }
 .link-btn:hover { text-decoration: underline; }
-.nas-select {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 5px 8px;
-  font-size: 12px;
-  background: #fff;
-  outline: none;
-  cursor: pointer;
-}
-.nas-select:focus { border-color: var(--accent); }
-.row .rname { font-size: 10px; color: var(--accent); margin-top: 2px; word-break: break-all; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 #episodeChips { user-select: none; }

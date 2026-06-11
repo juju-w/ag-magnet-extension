@@ -21,12 +21,7 @@ const el = {
   episodeChips: document.getElementById('episodeChips'),
   keyword: document.getElementById('keyword'),
   list: document.getElementById('list'),
-  fmtHint: document.getElementById('fmtHint'),
-  showName: document.getElementById('showName'),
-  year: document.getElementById('year'),
-  season: document.getElementById('season'),
   offset: document.getElementById('offset'),
-  copyFormat: document.getElementById('copyFormat'),
   selectAll: document.getElementById('selectAll'),
   clearAll: document.getElementById('clearAll'),
   copyBtn: document.getElementById('copyBtn'),
@@ -47,7 +42,6 @@ async function init() {
     return;
   }
 
-  el.showName.value = guessShowName(tab.title, query);
   el.status.textContent = '正在加载资源…';
   try {
     const { resources, complete } = await fetchAll(query.params);
@@ -73,17 +67,12 @@ async function init() {
   }
 
   el.keyword.addEventListener('input', () => { renderList(); refreshEpisodeChips(); });
-  el.showName.addEventListener('input', renderList);
-  el.year.addEventListener('input', renderList);
-  const recomputeAll = () => {
+  el.offset.addEventListener('input', () => {
     recompute();
     renderEpisodes();
     renderList();
     updateFooter();
-  };
-  el.season.addEventListener('input', recomputeAll);
-  el.offset.addEventListener('input', recomputeAll);
-  el.copyFormat.addEventListener('change', renderList);
+  });
   el.fansubAll.addEventListener('click', () => setAllFansubs(true));
   el.fansubNone.addEventListener('click', () => setAllFansubs(false));
   el.selectAll.addEventListener('click', () => setAllVisible(true));
@@ -147,26 +136,6 @@ async function fetchAll(params) {
 }
 
 const CN_NUM = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
-
-function guessShowName(tabTitle, query) {
-  if (tabTitle) {
-    // "<name> 最新资源 | Anime Garden ..." -> "<name>"
-    const name = tabTitle.split('|')[0].replace(/\s*最新资源\s*$/, '').trim();
-    if (name && !/Anime Garden/i.test(name)) return stripSeason(name);
-  }
-  const s = query.params.get('search') || query.params.get('include') || '';
-  return stripSeason(s.trim());
-}
-
-// Drop season markers from a show name, since season is expressed as SxxEyy.
-function stripSeason(s) {
-  return s
-    .replace(/第\s*[一二三四五六七八九十\d]+\s*季/g, '')
-    .replace(/\b\d+(?:st|nd|rd|th)\s*Season\b/gi, '')
-    .replace(/\bS0?\d{1,2}\b(?!E\d)/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 function detectSeason(title) {
   let m;
@@ -252,30 +221,18 @@ function buildItems(resources) {
   items.forEach((it) => activeFansubs.add(it.fansub));
 }
 
-// Auto-detect the dominant season and absolute-number offset, prefill the UI.
+// Auto-detect the dominant absolute-number offset (from "09(81)"-style titles)
+// and prefill the 偏移 input used to merge absolute episode numbers.
 function autoFillSeasonOffset() {
-  const seasonVotes = new Map();
   const offsetVotes = new Map();
   for (const it of items) {
-    if (it.seasonDetected) {
-      seasonVotes.set(it.seasonDetected, (seasonVotes.get(it.seasonDetected) || 0) + 1);
-    }
     if (it.raw.kind === 'paren') {
       const off = it.raw.b - it.raw.a;
       if (off > 0) offsetVotes.set(off, (offsetVotes.get(off) || 0) + 1);
     }
   }
   const top = (map) => [...map.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-  if (seasonVotes.size) el.season.value = top(seasonVotes);
   if (offsetVotes.size) el.offset.value = top(offsetVotes);
-
-  // year: earliest release year among resources (a sane default for matching)
-  let minYear = Infinity;
-  for (const it of items) {
-    const y = new Date(it.res.createdAt).getFullYear();
-    if (y && y < minYear) minYear = y;
-  }
-  if (isFinite(minYear) && !el.year.value) el.year.value = minYear;
 }
 
 // Recompute every item's episode fields from the current offset.
@@ -287,9 +244,9 @@ function recompute() {
   const distinct = new Set(items.map((it) => it.seasonDetected).filter(Boolean));
   const multi = distinct.size > 1;
   const fieldOffset = Math.max(0, parseInt(el.offset.value, 10) || 0);
-  // Undetected items default to S1 (a marker-less first season) in multi mode,
-  // else to the (auto-filled, editable) 季 field.
-  const fallbackSeason = multi ? 1 : Math.max(0, parseInt(el.season.value, 10) || 1);
+  // Season number is only used for the "Sxx" label prefix in multi-season lists;
+  // titles without a detectable season fall back to S1.
+  const fallbackSeason = 1;
 
   const offMap = {};
   if (multi) {
@@ -364,80 +321,6 @@ function buildMagnet(r) {
   return r.tracker ? r.magnet + r.tracker : r.magnet;
 }
 
-// --- NAS-friendly naming ---
-function sanitize(s) {
-  return String(s).replace(/[\\/:*?"<>|\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function showTitle() {
-  return sanitize(el.showName.value) || 'Anime';
-}
-
-function showFolder() {
-  const y = parseInt(el.year.value, 10);
-  return y ? `${showTitle()} (${y})` : showTitle();
-}
-
-function seasonOf(it) {
-  // it.season is resolved during recompute(); fall back defensively.
-  return Math.max(0, it.season || it.seasonDetected || (parseInt(el.season.value, 10) || 1));
-}
-
-// File basename (no extension), e.g. "剧名 - S04E09". Used for the dn rename.
-function nasName(it) {
-  const show = showTitle();
-  const s = pad(seasonOf(it));
-  if (it.epKind === 'special') return sanitize(`${show} - ${it.title}`).slice(0, 150);
-  if (it.epKind === 'range') return `${show} - S${s}E${pad(it.epA)}-E${pad(it.epB)}`;
-  return `${show} - S${s}E${pad(it.epNum)}`;
-}
-
-// 极影视 / Emby / Kodi friendly relative path (no extension):
-//   剧名 (年)/Season 04/剧名 - S04E09
-//   剧名 (年)/Specials/剧名 - <原标题>   (OP/ED/特典)
-function nasPath(it) {
-  const seasonDir = it.epKind === 'special' ? 'Specials' : `Season ${pad(seasonOf(it))}`;
-  return `${showFolder()}/${seasonDir}/${nasName(it)}`;
-}
-
-// Replace any existing dn (often an empty "&dn=") with the file basename.
-function magnetWithName(it) {
-  const base = it.magnet.replace(/[?&]dn=[^&]*/gi, (hit) => (hit[0] === '?' ? '?' : ''));
-  const sep = base.includes('?') ? '&' : '?';
-  return `${base}${sep}dn=${encodeURIComponent(nasName(it))}`;
-}
-
-function formatLine(it) {
-  switch (el.copyFormat.value) {
-    case 'magnet-dn': return magnetWithName(it);
-    case 'path': return nasPath(it);
-    case 'path-magnet': return nasPath(it) + '\t' + it.magnet;
-    default: return it.magnet;
-  }
-}
-
-function showsName() {
-  return el.copyFormat.value !== 'magnet';
-}
-
-const FMT_DESC = {
-  magnet: '直接粘贴到下载器（迅雷 / qBittorrent / Aria2 等）即可下载。',
-  'magnet-dn': '磁力已写入规范名，下载器任务名会显示为下方样式（注意：磁力改不了单集真实文件名，建议配合下方整理脚本）。',
-  path: '仅复制目标相对路径，用于核对目录结构。',
-  'path-magnet': '每行「目标路径 ⇥ 磁力」两列，配合 organize.py 把下载好的文件归位到极影视目录。',
-};
-
-// Show a one-line description plus a live example of the current format.
-function updateFmtHint() {
-  const sample = items.find((it) => it.checked) || currentVisibleItems()[0] || items[0];
-  let html = escapeHtml(FMT_DESC[el.copyFormat.value] || '');
-  if (sample) {
-    const line = formatLine(sample).replace(/\t/g, '  ⇥  ');
-    const shown = line.length > 120 ? line.slice(0, 120) + '…' : line;
-    html += `<span class="eg">示例：${escapeHtml(shown)}</span>`;
-  }
-  el.fmtHint.innerHTML = html;
-}
 
 // --- Rendering ---
 function renderFansubs() {
@@ -564,7 +447,6 @@ function renderList() {
     byFansub.get(it.fansub).push(it);
   });
 
-  const withName = showsName();
   for (const [fansub, rows] of byFansub) {
     const head = document.createElement('div');
     head.className = 'group-head';
@@ -580,7 +462,6 @@ function renderList() {
         <span class="meta">
           <span class="rtitle">${escapeHtml(it.title)}</span>
           <span class="rsub">${formatSize(it.res.size)} · ${formatDate(it.res.createdAt)}</span>
-          ${withName ? `<span class="rname">→ ${escapeHtml(nasPath(it))}</span>` : ''}
         </span>`;
       const cb = row.querySelector('input');
       cb.addEventListener('change', () => {
@@ -609,7 +490,6 @@ function setAllVisible(state) {
 }
 
 function updateFooter() {
-  updateFmtHint();
   const n = items.filter((it) => it.checked).length;
   const visibleSet = new Set(currentVisibleItems());
   const hidden = items.filter((it) => it.checked && !visibleSet.has(it)).length;
@@ -626,7 +506,7 @@ async function copySelected() {
   const chosen = items.filter((it) => it.checked);
   if (!chosen.length) return;
   chosen.sort((a, b) => a.epSort - b.epSort || a.fansub.localeCompare(b.fansub));
-  const text = chosen.map(formatLine).join('\n');
+  const text = chosen.map((it) => it.magnet).join('\n');
   try {
     await navigator.clipboard.writeText(text);
     el.copyBtn.textContent = `已复制 ${chosen.length} 条 ✓`;
