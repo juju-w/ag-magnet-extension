@@ -594,7 +594,15 @@ function renderList() {
 }
 
 function setAllVisible(state) {
-  currentVisibleItems().forEach((it) => (it.checked = state));
+  if (state) {
+    // 全选：选中集合恰好等于当前可见（字幕组 + 关键词）集，
+    // 清掉之前在其它筛选下残留的隐藏选中，避免“全选后混入筛选前的项”。
+    const visible = new Set(currentVisibleItems());
+    items.forEach((it) => (it.checked = visible.has(it)));
+  } else {
+    // 清空：清掉全部选中（含不在当前筛选内的）。
+    items.forEach((it) => (it.checked = false));
+  }
   renderList();
   refreshEpisodeChips();
   updateFooter();
@@ -603,7 +611,12 @@ function setAllVisible(state) {
 function updateFooter() {
   updateFmtHint();
   const n = items.filter((it) => it.checked).length;
-  el.copyBtn.textContent = `复制选中磁力 (${n})`;
+  const visibleSet = new Set(currentVisibleItems());
+  const hidden = items.filter((it) => it.checked && !visibleSet.has(it)).length;
+  el.copyBtn.textContent = hidden
+    ? `复制选中磁力 (${n}，含 ${hidden} 项当前已筛掉)`
+    : `复制选中磁力 (${n})`;
+  el.copyBtn.title = hidden ? '部分已选资源不在当前筛选视图内，仍会被复制' : '';
   el.copyBtn.disabled = n === 0;
   el.copyBtn.classList.remove('done');
   if (copyResetTimer) { clearTimeout(copyResetTimer); copyResetTimer = null; }
